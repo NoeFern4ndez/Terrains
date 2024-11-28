@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Net;
 
-public class CreateTerrainBase : EditorWindow
+public class CreateTerrain : EditorWindow
 {
     // string assetName = "TerrainTexture";
 
@@ -20,7 +20,10 @@ public class CreateTerrainBase : EditorWindow
     float midpointAmplitude = 1;
     float midpointH = 0.5f;
     // Diamond-Square
-
+    int diamondSquareN = 8;
+    int diamondSquareSeed = 0;
+    float diamondSquareAmplitude = 1;
+    float diamondSquareH = 0.5f;
     // FBM
     float FMBAmplitude = 1;
     float FBMFreq = 4;
@@ -28,16 +31,19 @@ public class CreateTerrainBase : EditorWindow
     float FBMLacunarity = 3.0f;
     int FBMOctaves = 8;
     int FBMSeed = 0;
+    enum FBMType { Perlin, Voronoi };
+    int FBMTypeIndex = 0;
+    int FBMVoronoiGridSize = 5;
     bool FBMHybridMultifractal = true;
 
 
 
 
     // Add menu item to show the window
-    [MenuItem ("TPA/Create terrain base")]
+    [MenuItem ("Terrains/Create terrains")]
     private static void ShowWindow() {
-        var window = GetWindow<CreateTerrainBase>();
-        window.titleContent = new GUIContent("Create Terrain Base");
+        var window = GetWindow<CreateTerrain>();
+        window.titleContent = new GUIContent("Create Terrains");
         window.Show();
     }
 
@@ -100,6 +106,25 @@ public class CreateTerrainBase : EditorWindow
         }
 
         GUILayout.Label("4. Generación diamante-cuadrado", EditorStyles.boldLabel);
+        // Número de divisiones
+        diamondSquareN = EditorGUILayout.IntSlider("Number of divisions (N)", diamondSquareN, 1, 11);
+        // Amplitud
+        diamondSquareAmplitude = EditorGUILayout.Slider("Noise Amplitude (A)", diamondSquareAmplitude, 0.001f, 1.0f);
+        // H
+        diamondSquareH = EditorGUILayout.Slider("Amplitude falloff (H)", diamondSquareH, 0.001f, 1.0f);
+        // Semilla
+        diamondSquareSeed = EditorGUILayout.IntField("Seed", diamondSquareSeed);
+
+        if (GUILayout.Button("Generate diamond-square terrain")) 
+        {
+            if (terrain == null) 
+            {
+                Debug.LogError("Terrain is null");
+                return;
+            }
+            Debug.Log("Generating diamond-square terrain...");
+            GenerateDiamondSquareTerrain(terrain, diamondSquareN, diamondSquareSeed, diamondSquareAmplitude, diamondSquareH);
+        }
 
         GUILayout.Label("5. Generación FBM", EditorStyles.boldLabel);
         // Amplitud
@@ -114,6 +139,11 @@ public class CreateTerrainBase : EditorWindow
         FBMOctaves = EditorGUILayout.IntSlider("FBM Octaves", FBMOctaves, 1, 32);
         // Semilla
         FBMSeed = EditorGUILayout.IntField("Seed", FBMSeed);
+        // Tipo de FBM
+        FBMTypeIndex = EditorGUILayout.Popup("FBM Type", FBMTypeIndex, Enum.GetNames(typeof(FBMType)));
+
+        if(FBMTypeIndex == 1)
+            FBMVoronoiGridSize = EditorGUILayout.IntSlider("Voronoi Grid Size", FBMVoronoiGridSize, 1, 32);
         // Hybrid Multifractal
         FBMHybridMultifractal = EditorGUILayout.Toggle("Hybrid Multifractal", FBMHybridMultifractal);
         
@@ -125,7 +155,7 @@ public class CreateTerrainBase : EditorWindow
                 return;
             }
             Debug.Log("Generating FBM terrain...");
-            GenerateFBM(terrain, FBMSeed, FMBAmplitude, FBMFreq, FBMGain, FBMLacunarity, FBMOctaves, FBMHybridMultifractal);
+            GenerateFBM(terrain, FBMSeed, FMBAmplitude, FBMFreq, FBMGain, FBMLacunarity, FBMOctaves, FBMHybridMultifractal, FBMTypeIndex);
         }        
     }
 
@@ -235,8 +265,94 @@ public class CreateTerrainBase : EditorWindow
         // Apply heightmap	
         ApplyHeightMap(vertices, terrain);
     }
+ 
+    void GenerateDiamondSquareTerrain(Terrain terrain, int N, int seed, float A, float H)
+    {
+        int nVert = (int)Mathf.Pow(2, N) + 1;
+        var vertices = new float[nVert, nVert];
+
+        UnityEngine.Random.InitState(seed);
     
-    void GenerateFBM(Terrain terrain, int seed, float A0, float F0, float dA, float dF, int octaves, bool H)
+        int n = 0;
+        vertices[0, 0] = 0.5f + zValue(n, A, H);
+        vertices[0, nVert-1] = 0.5f + zValue(n, A, H);
+        vertices[nVert-1, 0] = 0.5f + zValue(n, A, H);
+        vertices[nVert-1, nVert-1] = 0.5f + zValue(n, A, H);
+
+        // For each division
+        for (n = 0; n < N; n++) 
+        {
+            // Size of each square
+            int d = (int)Mathf.Pow(2, (N - n));
+            // Half size of each square
+            int d2 = d/2;
+            // 1. Compute rows (North & South)
+            for (int j=0; j<nVert; j+=d)
+                for (int i=0; i+d<nVert; i+=d)
+                    vertices[i+d2,j] = (vertices[i,j] + vertices[i+d,j]) * 0.5f + zValue(n, A, H);
+
+            // 2. Compute columns (East & West)
+            for (int i=0; i<nVert; i+=d)
+                for (int j=0; j+d<nVert; j+=d)
+                    vertices[i,j+d2] = (vertices[i,j] + vertices[i,j+d]) * 0.5f + zValue(n, A, H);
+
+            // 3. Compute centers
+            for (int i=0; i+d<nVert; i+=d)
+                for (int j=0; j+d<nVert; j+=d)
+                    vertices[i+d2,j+d2] = (vertices[i+d2,j] + vertices[i+d2,j+d] +
+                    vertices[i,j+d2] + vertices[i+d,j+d2]) * 0.25f + zValue(n, A, H);
+
+            // 4. Compute diamonds
+            for (int i=0; i+d<nVert; i+=d)
+                for (int j=0; j+d<nVert; j+=d)
+                {
+                    vertices[i+d2,j+d2] = (vertices[i+d2,j] + vertices[i+d2,j+d] +
+                    vertices[i,j+d2] + vertices[i+d,j+d2]) * 0.25f + zValue(n, A, H);
+                    vertices[i+d2,j+d2] += zValue(n, A, H);
+                }
+        }
+
+        // Apply heightmap
+        ApplyHeightMap(vertices, terrain);
+    }
+
+    float Voronoi(float x, float y)
+    {
+        // Define the size of the grid
+        int gridSize = FBMVoronoiGridSize;
+        float cellSize = 1.0f / gridSize;
+
+        // Compute the cell coordinates
+        int xCell = Mathf.FloorToInt(x / cellSize);
+        int yCell = Mathf.FloorToInt(y / cellSize);
+
+        float minDistance = float.MaxValue;
+
+        // Check neighboring cells (to include edge cases)
+        for (int i = -1; i <= 1; i++)
+        {
+            for (int j = -1; j <= 1; j++)
+            {
+                // Get random seed position within the cell
+                Vector2 cellPosition = new Vector2(
+                    (xCell + i) * cellSize + UnityEngine.Random.value * cellSize,
+                    (yCell + j) * cellSize + UnityEngine.Random.value * cellSize
+                );
+
+                // Calculate the distance from the input point to the seed point
+                float distance = Vector2.Distance(new Vector2(x, y), cellPosition);
+
+                // Track the minimum distance for Voronoi effect
+                minDistance = Mathf.Min(minDistance, distance);
+            }
+        }
+
+        // Normalize the distance for terrain generation (optional scaling)
+        return minDistance;
+    }
+
+    
+    void GenerateFBM(Terrain terrain, int seed, float A0, float F0, float dA, float dF, int octaves, bool H, int type)
     {
         int nVert = terrain.terrainData.heightmapResolution;
         var vertices = new float[nVert, nVert];
@@ -253,7 +369,11 @@ public class CreateTerrainBase : EditorWindow
 
                 for(int k = 1; k < octaves; k++)
                 {
-                    float Noise = Mathf.PerlinNoise(F * i / nVert + seed, F * j / nVert + seed);
+                    float Noise = 0;
+                    if(type == 0)
+                        Noise = Mathf.PerlinNoise(F * i / nVert + seed, F * j / nVert + seed);
+                    else
+                        Noise = Voronoi(F * i / nVert + seed, F * j / nVert + seed);
                     float weight = A * Noise;
                     
                     A *= dA;
