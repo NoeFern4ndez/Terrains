@@ -31,9 +31,10 @@ public class CreateTerrain : EditorWindow
     float FBMLacunarity = 3.0f;
     int FBMOctaves = 8;
     int FBMSeed = 0;
-    enum FBMType { Perlin, Voronoi };
+    enum FBMType { Perlin, Voronoi, Sine };
     int FBMTypeIndex = 0;
     int FBMVoronoiGridSize = 5;
+    Vector2 FBMSineDirection = new Vector2(1, 1);
     bool FBMHybridMultifractal = true;
 
 
@@ -144,6 +145,8 @@ public class CreateTerrain : EditorWindow
 
         if(FBMTypeIndex == 1)
             FBMVoronoiGridSize = EditorGUILayout.IntSlider("Voronoi Grid Size", FBMVoronoiGridSize, 1, 32);
+        if(FBMTypeIndex == 2)
+            FBMSineDirection = EditorGUILayout.Vector2Field("Sine Direction", FBMSineDirection);
         // Hybrid Multifractal
         FBMHybridMultifractal = EditorGUILayout.Toggle("Hybrid Multifractal", FBMHybridMultifractal);
         
@@ -155,7 +158,7 @@ public class CreateTerrain : EditorWindow
                 return;
             }
             Debug.Log("Generating FBM terrain...");
-            GenerateFBM(terrain, FBMSeed, FMBAmplitude, FBMFreq, FBMGain, FBMLacunarity, FBMOctaves, FBMHybridMultifractal, FBMTypeIndex);
+            GenerateFBM(terrain, FBMSeed, FMBAmplitude, FBMFreq, FBMGain, FBMLacunarity, FBMOctaves, FBMHybridMultifractal, FBMTypeIndex, FBMSineDirection);
         }        
     }
 
@@ -351,8 +354,13 @@ public class CreateTerrain : EditorWindow
         return minDistance;
     }
 
+    float Sine(float x, float y, Vector2 direction)
+    {
+        return Mathf.Sin(direction.x * x + direction.y * y);
+    }
+
     
-    void GenerateFBM(Terrain terrain, int seed, float A0, float F0, float dA, float dF, int octaves, bool H, int type)
+    void GenerateFBM(Terrain terrain, int seed, float A0, float F0, float dA, float dF, int octaves, bool H, int type, Vector2 direction0)
     {
         int nVert = terrain.terrainData.heightmapResolution;
         var vertices = new float[nVert, nVert];
@@ -366,22 +374,36 @@ public class CreateTerrain : EditorWindow
                 float A = A0;
                 float F = F0;
                 float y = 0;
+                Vector2 direction = new Vector2(direction0.x, direction0.y);
 
-                for(int k = 1; k < octaves; k++)
+                for(int k = 1; k <= octaves; k++)
                 {
                     float Noise = 0;
+
                     if(type == 0)
                         Noise = Mathf.PerlinNoise(F * i / nVert + seed, F * j / nVert + seed);
-                    else
+                    else if(type == 1)
                         Noise = Voronoi(F * i / nVert + seed, F * j / nVert + seed);
+                    else if(type == 2)
+                        Noise = Sine(F * i / nVert + seed, F * j / nVert + seed, direction);
+
+
                     float weight = A * Noise;
                     
                     A *= dA;
                     F *= dF;
                     if(H)
+                    {
                         y += A * Noise * weight;
+                        direction.x += UnityEngine.Random.value * y;
+                        direction.y += UnityEngine.Random.value * y;
+                    }
                     else
+                    {
                         y += A * Noise;
+                        direction.x += UnityEngine.Random.value;
+                        direction.y += UnityEngine.Random.value;
+                    }
 
                     weight = y;
                 }
