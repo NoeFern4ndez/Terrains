@@ -12,8 +12,15 @@ public class ErodeTerrain : EditorWindow
     // string assetName = "TerrainTexture";
 
     Terrain terrain;
+    // Thermal erosion
     float ThermalFactor = 0.1f;
     float ThermalThreshold = 0.01f;
+    // Hydraulic erosion
+    float WaterGenK = 0.01f;
+    float WaterEvapK = 0.01f;
+    float WaterSedimentK = 0.01f;
+    float SedimentPerWaterK = 0.01f;
+    int Niters = 100;
 
 
 
@@ -38,7 +45,6 @@ public class ErodeTerrain : EditorWindow
         }
 
         GUILayout.Label("2.Thermic erosion", EditorStyles.boldLabel);
-
         ThermalFactor = EditorGUILayout.Slider("Thermal Factor (c)", ThermalFactor, 0.01f, 1.0f);
         ThermalThreshold = EditorGUILayout.Slider("Thermal Threshold (T)", ThermalThreshold, 0.01f, 1.0f);
 
@@ -54,6 +60,22 @@ public class ErodeTerrain : EditorWindow
         }
         
         GUILayout.Label("3.Hydraulic erosion", EditorStyles.boldLabel);
+        WaterGenK = EditorGUILayout.Slider("Rain (Kr)", WaterGenK, 0.01f, 1.0f);
+        WaterEvapK = EditorGUILayout.Slider("Evaporation (Ke)", WaterEvapK, 0.01f, 1.0f);
+        WaterSedimentK = EditorGUILayout.Slider("Sediment (Ks)", WaterSedimentK, 0.01f, 1.0f);
+        SedimentPerWaterK = EditorGUILayout.Slider("Sediment per Water (Kc)", SedimentPerWaterK, 0.01f, 1.0f);
+        Niters = EditorGUILayout.IntSlider("Number of iterations", Niters, 1, 100);
+
+        if(GUILayout.Button("Apply Hydraulic Erosion"))
+        {
+            if (terrain == null) 
+            {
+                Debug.LogError("Terrain is null");
+                return;
+            }
+            Debug.Log("Applying hydraulic erosion...");
+            ErodeTerrainHydraulic(terrain, WaterGenK, WaterEvapK, WaterSedimentK, SedimentPerWaterK, Niters);
+        }
     }
 
     void ErodeTerrainThermal(Terrain terrain, float factor, float threshold)
@@ -64,7 +86,6 @@ public class ErodeTerrain : EditorWindow
         int w = data.heightmapResolution;
         float[,] rawHeights = data.GetHeights(0, 0, w, w);
         float[] differences = new float[4];
-        int[,] directions = new int[,] { {1, 0}, {-1, 0}, {0, 1}, {0, -1} };
 
         for (int i = 0; i < w; i++)
             for (int j = 0; j < w; j++)
@@ -89,17 +110,126 @@ public class ErodeTerrain : EditorWindow
                 {
                     rawHeights[i, j] -= factor * (dmax - threshold);
 
-                    for (int k = 0; k < 4; k++)
+                    if (i + 1 < w && differences[0] > threshold)
+                        rawHeights[i + 1, j] += factor * (dmax - threshold) * differences[0] / dtotal;
+                    if (i - 1 >= 0 && differences[1] > threshold)
+                        rawHeights[i - 1, j] += factor * (dmax - threshold) * differences[1] / dtotal;
+                    if (j + 1 < w && differences[2] > threshold)
+                        rawHeights[i, j + 1] += factor * (dmax - threshold) * differences[2] / dtotal;
+                    if (j - 1 >= 0 && differences[3] > threshold)
+                        rawHeights[i, j - 1] += factor * (dmax - threshold) * differences[3] / dtotal;
+                }
+            }
+
+        data.SetHeights(0, 0, rawHeights);
+    }
+
+    void ErodeTerrainHydraulic(Terrain terrain, float Kr, float Ke, float Ks, float Kc, int N)
+    {
+        TerrainData data = terrain.terrainData;
+        Undo.RegisterCompleteObjectUndo(data, "Erode Terrain");
+        int w = data.heightmapResolution;
+        float[,] rawHeights = data.GetHeights(0, 0, w, w);
+        // Paso 0
+        float[,] water = new float[w, w];
+        float[,] sediment = new float[w, w];
+
+        for (int i = 0; i < w; i++)
+            for (int j = 0; j < w; j++)
+            {
+                water[i, j] = 0;
+                sediment[i, j] = 0;
+            }
+
+        for(int i = 0; i < w; i++) 
+        {
+            for (int j = 0; j < w; j++)
+            {
+                for (int k = 0; k < N; k++)
+                {
+                    // Paso 1
+                    water[i, j] += Kr;
+                    // Paso 2
+                    rawHeights[i, j] -= Ks * water[i, j];
+                    sediment[i, j] += Ks * water[i, j];
+
+                    // Paso 3
+                    float left = (i - 1 >= 0) ? rawHeights[i - 1, j] : rawHeights[i, j];
+                    float right = (i + 1 < w) ? rawHeights[i + 1, j] : rawHeights[i, j];
+                    float up = (j - 1 >= 0) ? rawHeights[i, j - 1] : rawHeights[i, j];
+                    float down = (j + 1 < w) ? rawHeights[i, j + 1] : rawHeights[i, j];
+                    float waterleft = (i - 1 >= 0) ? water[i - 1, j] : 0;
+                    float waterright = (i + 1 < w) ? water[i + 1, j] : 0;
+                    float waterup = (j - 1 >= 0) ? water[i, j - 1] : 0;
+                    float waterdown = (j + 1 < w) ? water[i, j + 1] : 0;
+                    float sedimentleft = (i - 1 >= 0) ? sediment[i - 1, j] : 0;
+                    float sedimentright = (i + 1 < w) ? sediment[i + 1, j] : 0;
+                    float sedimentup = (j - 1 >= 0) ? sediment[i, j - 1] : 0;
+                    float sedimentdown = (j + 1 < w) ? sediment[i, j + 1] : 0;
+
+                    float a0 = rawHeights[i, j] + water[i, j];
+                    float aleft = left + waterleft;
+                    float aright = right + waterright;
+                    float aup = up + waterup;
+                    float adown = down + waterdown;
+
+                    float amean = (a0 + aleft + aright + aup + adown) / 5;
+                    float adelta = a0 - amean;
+
+                    float dleft = a0 - aleft;
+                    float dright = a0 - aright;
+                    float dup = a0 - aup;
+                    float ddown = a0 - adown;
+
+                    float dtotal = 0;
+                    if (dleft > 0) dtotal += dleft;
+                    if (dright > 0) dtotal += dright;
+                    if (dup > 0) dtotal += dup;
+                    if (ddown > 0) dtotal += ddown;
+
+                    if (dtotal > 0)
                     {
-                        int newI = i + directions[k, 0];
-                        int newJ = j + directions[k, 1];
-                        if (newI >= 0 && newI < w && newJ >= 0 && newJ < w && differences[k] > threshold)
+                        float wdelta = Math.Min(water[i, j], adelta);
+                        float wdeltaleft = wdelta * dleft / dtotal;
+                        float wdeltaright = wdelta * dright / dtotal;
+                        float wdeltadown = wdelta * ddown / dtotal;
+                        float wdeltadup = wdelta * dup / dtotal;
+
+                        waterleft += wdeltaleft;
+                        waterright += wdeltaright;
+                        waterup += wdeltadup;
+                        waterdown += wdeltadown;
+                        water[i, j] -= wdelta;
+
+                        if(water[i, j] > 0)
                         {
-                            rawHeights[newI, newJ] += factor * (dmax - threshold) * differences[k] / dtotal;
+                            sedimentleft += sediment[i, j] * wdeltaleft / water[i, j];
+                            sedimentright += sediment[i, j] * wdeltaright / water[i, j];
+                            sedimentup += sediment[i, j] * wdeltadup / water[i, j];
+                            sedimentdown += sediment[i, j] * wdeltadown / water[i, j];
+                            if(i - 1 >= 0) sediment[i - 1, j] = sedimentleft;
+                            if(i + 1 < w) sediment[i + 1, j] = sedimentright;
+                            if(j - 1 >= 0) sediment[i, j - 1] = sedimentup;
+                            if(j + 1 < w) sediment[i, j + 1] = sedimentdown;
+                            sediment[i, j] -= sediment[i, j] * wdelta / water[i, j];
+
+    
+                            // Paso 4
+                            water[i, j] = water[i, j] * (1 - Ke);
+                            float maxsediment = Kc * water[i, j];
+                            float deltaSediment = Math.Max(0, sediment[i, j] - maxsediment);
+                            sediment[i, j] -= deltaSediment;
+                            rawHeights[i, j] += deltaSediment;
                         }
                     }
                 }
+
+                // Final
+                rawHeights[i, j] += sediment[i, j];
+
             }
+        }
+
 
         data.SetHeights(0, 0, rawHeights);
     }

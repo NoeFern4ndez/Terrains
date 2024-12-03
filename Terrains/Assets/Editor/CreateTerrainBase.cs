@@ -129,15 +129,15 @@ public class CreateTerrain : EditorWindow
 
         GUILayout.Label("5. Generación FBM", EditorStyles.boldLabel);
         // Amplitud
-        FMBAmplitude = EditorGUILayout.Slider("FBM Amplitude (A)", FMBAmplitude, 0.001f, 1.0f);
+        FMBAmplitude = EditorGUILayout.Slider("FBM Amplitude (A)", FMBAmplitude, 0.001f, 2.0f);
         // Frecuencia
         FBMFreq = EditorGUILayout.Slider("FBM Frequency (F)", FBMFreq, 0.001f, 8.0f);
         // Ganancia
         FBMGain = EditorGUILayout.Slider("FBM amplitude delta (gain)", FBMGain, 0.001f, 2.0f);
         // Lacunarity
-        FBMLacunarity = EditorGUILayout.Slider("FBM frequency delta (Lacunarity)", FBMLacunarity, 0.001f, 6.0f);
+        FBMLacunarity = EditorGUILayout.Slider("FBM frequency delta (Lacunarity)", FBMLacunarity, 0.001f, 8.0f);
         // Octavas
-        FBMOctaves = EditorGUILayout.IntSlider("FBM Octaves", FBMOctaves, 1, 32);
+        FBMOctaves = EditorGUILayout.IntSlider("FBM Octaves", FBMOctaves, 1, 10);
         // Semilla
         FBMSeed = EditorGUILayout.IntField("Seed", FBMSeed);
         // Tipo de FBM

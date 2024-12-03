@@ -43,13 +43,17 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _FlowerTex:
+        m_Texture: {fileID: 2800000, guid: 6dec038fcd6ec814cad025080412441c, type: 3}
+        m_Scale: {x: 80, y: 80}
+        m_Offset: {x: 0, y: 0}
     - _GrassTex:
         m_Texture: {fileID: 2800000, guid: d8ca3a514861a4e4fba8122eae627c38, type: 3}
         m_Scale: {x: 3, y: 3}
         m_Offset: {x: 0, y: 0}
     - _GroundTex:
         m_Texture: {fileID: 2800000, guid: 710f1e25dffbf074e80b859c8023a1ed, type: 3}
-        m_Scale: {x: 0.2, y: 0.2}
+        m_Scale: {x: 2.37, y: 3}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 0}
@@ -69,11 +73,19 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _RockTex:
         m_Texture: {fileID: 2800000, guid: bb4e3bd66dc13824c8c308ea9b8543e9, type: 3}
-        m_Scale: {x: 10, y: 10}
+        m_Scale: {x: 5, y: 5}
         m_Offset: {x: 0, y: 0}
     - _SnowTex:
         m_Texture: {fileID: 0}
+        m_Scale: {x: 1.41, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _WaterNormal:
+        m_Texture: {fileID: 2800000, guid: 20ac5a57cfa76834f81a38366cd3307f, type: 3}
         m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _WaterTex:
+        m_Texture: {fileID: 2800000, guid: 81d9d1a4a7459194eb004d221dff4121, type: 3}
+        m_Scale: {x: 77.9, y: 84.44}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
@@ -81,39 +93,57 @@ Material:
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
+    - _FlowerClamp: 0.07
+    - _FlowerDistanceX: 1000
+    - _FlowerDistanceY: 1000
+    - _FlowerScale: 0.176
+    - _FlowerSlope: 0.23
     - _GlossMapScale: 1
     - _Glossiness: 0
     - _GlossyReflections: 1
-    - _GrassClamp: 1
-    - _GrassHeight: 180
+    - _GrassClamp: 0.894
+    - _GrassHeight: 230.43
+    - _GrassHeightVariation: 7.2
     - _GrassThreshold: 0.67
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _RockClamp: 0.2
-    - _RockThreshold: 0.48
+    - _RockClamp: 0.15
+    - _RockThreshold: 0.47
     - _SmoothnessTextureChannel: 0
-    - _SnowClamp: 1
-    - _SnowSlope: 0.75
-    - _SnowThreshold: 266.37
+    - _SnowClamp: 0.177
+    - _SnowHeightVariation: 40
+    - _SnowScale: 0.207
+    - _SnowSlope: 0.609
+    - _SnowThreshold: 388.1
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
+    - _WaterAngle: 166
+    - _WaterClamp: 0.692
+    - _WaterHeight: 93.73
+    - _WaterHeightVariation: 19.6
+    - _WaterScale: 0.403
+    - _WaterSlope: 0.51
+    - _WaterVelocity: 9
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _FlowerColor: {r: 0.8947208, g: 0.7783019, b: 1, a: 1}
     - _GrassColor: {r: 0.7240295, g: 0.7924528, b: 0.7214311, a: 1}
     - _GrassTexOffset: {r: 0, g: 0, b: 0, a: 0}
     - _GrassTexScale: {r: 1, g: 1, b: 1, a: 1}
     - _GroundColor: {r: 1, g: 1, b: 1, a: 1}
     - _GroundTexOffset: {r: 1, g: 0, b: 0, a: 0}
     - _GroundTexScale: {r: 0, g: 0, b: 0, a: 0}
-    - _RockColor: {r: 0.764151, g: 0.764151, b: 0.764151, a: 1}
+    - _RockColor: {r: 0.990566, g: 0.990566, b: 0.990566, a: 1}
     - _RockTexOffset: {r: 0, g: 0, b: 0, a: 0}
     - _RockTexScale: {r: 1, g: 1, b: 1, a: 1}
     - _SnowColor: {r: 1, g: 1, b: 1, a: 1}
     - _SnowTexOffset: {r: 0, g: 0, b: 0, a: 0}
     - _SnowTexScale: {r: 1, g: 1, b: 1, a: 1}
+    - _WaterColor: {r: 0.5154415, g: 0.5709785, b: 0.764151, a: 1}
+    - _WaterDirection: {r: 4.11, g: 0.3, b: 1, a: 1}
   m_BuildTextureStacks: []
