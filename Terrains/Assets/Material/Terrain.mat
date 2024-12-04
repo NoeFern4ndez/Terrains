@@ -93,7 +93,7 @@ Material:
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
-    - _FlowerClamp: 0.07
+    - _FlowerClamp: 0.181
     - _FlowerDistanceX: 1000
     - _FlowerDistanceY: 1000
     - _FlowerScale: 0.176
@@ -124,7 +124,7 @@ Material:
     - _WaterClamp: 0.692
     - _WaterHeight: 93.73
     - _WaterHeightVariation: 19.6
-    - _WaterScale: 0.403
+    - _WaterScale: 0.492
     - _WaterSlope: 0.51
     - _WaterVelocity: 9
     - _ZWrite: 1
