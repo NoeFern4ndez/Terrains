@@ -96,7 +96,7 @@ Material:
     - _FlowerClamp: 0.181
     - _FlowerDistanceX: 1000
     - _FlowerDistanceY: 1000
-    - _FlowerScale: 0.176
+    - _FlowerScale: 0
     - _FlowerSlope: 0.23
     - _GlossMapScale: 1
     - _Glossiness: 0

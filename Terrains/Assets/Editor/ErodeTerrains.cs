@@ -16,10 +16,10 @@ public class ErodeTerrain : EditorWindow
     float ThermalFactor = 0.1f;
     float ThermalThreshold = 0.01f;
     // Hydraulic erosion
-    float WaterGenK = 0.01f;
-    float WaterEvapK = 0.01f;
-    float WaterSedimentK = 0.01f;
-    float SedimentPerWaterK = 0.01f;
+    float WaterGenK = 0.7f;
+    float WaterEvapK = 0.4f;
+    float WaterSedimentK = 0.3f;
+    float SedimentPerWaterK = 0.1f;
     int Niters = 100;
 
 
@@ -65,6 +65,10 @@ public class ErodeTerrain : EditorWindow
         WaterSedimentK = EditorGUILayout.Slider("Sediment (Ks)", WaterSedimentK, 0.01f, 1.0f);
         SedimentPerWaterK = EditorGUILayout.Slider("Sediment per Water (Kc)", SedimentPerWaterK, 0.01f, 1.0f);
         Niters = EditorGUILayout.IntSlider("Number of iterations", Niters, 1, 100);
+        if(WaterEvapK < WaterSedimentK)
+        {
+            GUILayout.Label("Warning: Evaporation rate (Ke) should be greater than sediment rate (Ks)");
+        }
 
         if(GUILayout.Button("Apply Hydraulic Erosion"))
         {
@@ -141,11 +145,11 @@ public class ErodeTerrain : EditorWindow
                 sediment[i, j] = 0;
             }
 
-        for(int i = 1; i < w - 1; i++) 
+        for (int k = 0; k < N; k++)
         {
-            for (int j = 1; j < w - 1; j++)
+            for(int i = 0; i < w; i++) 
             {
-                for (int k = 0; k < N; k++)
+                for (int j = 0; j < w; j++)
                 {
                     // Paso 1
                     water[i, j] += Kr;
@@ -156,27 +160,27 @@ public class ErodeTerrain : EditorWindow
                         sediment[i, j] += Ks * water[i, j];
 
                         // Paso 3
-                        float left = rawHeights[i - 1, j];
-                        float right = rawHeights[i + 1, j];
-                        float up = rawHeights[i, j - 1];
-                        float down = rawHeights[i, j + 1];
-                        
-                        float waterleft = water[i - 1, j];
-                        float waterright = water[i + 1, j];
-                        float waterup = water[i, j - 1];
-                        float waterdown = water[i, j + 1];
+                        float left = (i - 1 >= 0) ? rawHeights[i - 1, j] : 0; 
+                        float right = (i + 1 < w) ? rawHeights[i + 1, j] : 0;
+                        float up = (j - 1 >= 0) ? rawHeights[i, j - 1] : 0;
+                        float down = (j + 1 < w) ? rawHeights[i, j + 1] : 0;
 
-                        float sedimentleft = sediment[i - 1, j];
-                        float sedimentright = sediment[i + 1, j];
-                        float sedimentup = sediment[i, j - 1];
-                        float sedimentdown = sediment[i, j + 1];
+                        float waterleft = (i - 1 >= 0) ? water[i - 1, j] : 0;
+                        float waterright = (i + 1 < w) ? water[i + 1, j] : 0;
+                        float waterup = (j - 1 >= 0) ? water[i, j - 1] : 0;
+                        float waterdown = (j + 1 < w) ? water[i, j + 1] : 0;
+
+                        float sedimentleft = (i - 1 >= 0) ? sediment[i - 1, j] : 0;
+                        float sedimentright = (i + 1 < w) ? sediment[i + 1, j] : 0;
+                        float sedimentup = (j - 1 >= 0) ? sediment[i, j - 1] : 0;
+                        float sedimentdown = (j + 1 < w) ? sediment[i, j + 1] : 0;
 
                         float a = rawHeights[i, j] + water[i, j];
                         float aleft = left + waterleft;
                         float aright = right + waterright;
                         float aup = up + waterup;
                         float adown = down + waterdown;
-
+                    
                         float amean = (a + aleft + aright + aup + adown) / 5;
                         float adelta = a - amean;
 
@@ -200,23 +204,25 @@ public class ErodeTerrain : EditorWindow
                             float wdeltadown = wdelta * ddown / dtotal;
                             float wdeltadup = wdelta * dup / dtotal;
 
-                            waterleft += wdeltaleft;
-                            waterright += wdeltaright;
-                            waterup += wdeltadup;
-                            waterdown += wdeltadown;
-                            water[i - 1, j] = waterleft;
-                            water[i + 1, j] = waterright;
-                            water[i, j - 1] = waterup;
-                            water[i, j + 1] = waterdown;
+                            if(dleft > 0) waterleft += wdeltaleft;
+                            if(dright > 0) waterright += wdeltaright;
+                            if(dup > 0) waterup += wdeltadup;
+                            if(ddown > 0) waterdown += wdeltadown;
 
-                            sedimentleft += sediment[i, j] * wdeltaleft / water[i, j];
-                            sedimentright += sediment[i, j] * wdeltaright / water[i, j];
-                            sedimentup += sediment[i, j] * wdeltadup / water[i, j];
-                            sedimentdown += sediment[i, j] * wdeltadown / water[i, j];
-                            sediment[i - 1, j] = sedimentleft;
-                            sediment[i + 1, j] = sedimentright;
-                            sediment[i, j - 1] = sedimentup;
-                            sediment[i, j + 1] = sedimentdown;
+                            if(i - 1 >= 0) water[i - 1, j] = waterleft;
+                            if(i + 1 < w) water[i + 1, j] = waterright;
+                            if(j - 1 >= 0) water[i, j - 1] = waterup;
+                            if(j + 1 < w) water[i, j + 1] = waterdown;
+                            
+                            if(dleft > 0) sedimentleft += sediment[i, j] * wdeltaleft / water[i, j];
+                            if(dright > 0) sedimentright += sediment[i, j] * wdeltaright / water[i, j];
+                            if(dup > 0) sedimentup += sediment[i, j] * wdeltadup / water[i, j];
+                            if(ddown > 0) sedimentdown += sediment[i, j] * wdeltadown / water[i, j];
+                                
+                            if(i - 1 >= 0) sediment[i - 1, j] = sedimentleft;
+                            if(i + 1 < w) sediment[i + 1, j] = sedimentright;
+                            if(j - 1 >= 0) sediment[i, j - 1] = sedimentup;
+                            if(j + 1 < w) sediment[i, j + 1] = sedimentdown;
 
                             sediment[i, j] -= sediment[i, j] * (wdelta / water[i, j]);
                             water[i, j] -= wdelta;
@@ -233,22 +239,17 @@ public class ErodeTerrain : EditorWindow
                         }
                     }
                 }
-
-                // Final
-                rawHeights[i, j] += sediment[i, j];
-
             }
         }
 
-        // Asignar a los bordes el valor de la celda adyacente
-        for (int i = 0; i < w; i++)
+        for(int i = 0; i < w; i++)
         {
-            rawHeights[i, 0] = rawHeights[i, 1];
-            rawHeights[i, w - 1] = rawHeights[i, w - 2];
-            rawHeights[0, i] = rawHeights[1, i];
-            rawHeights[w - 1, i] = rawHeights[w - 2, i];
+            for(int j = 0; j < w; j++)
+            {
+                rawHeights[i, j] += sediment[i, j];
+            }
         }
-
+        
 
         data.SetHeights(0, 0, rawHeights);
     }
