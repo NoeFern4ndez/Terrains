@@ -158,7 +158,7 @@ Shader "Terrains/Terrain"
             flowerFactor *= smoothstep(_WaterHeight, maxWaterHeight, pos.y);
             flowerFactor *= flowerSlopeFactor;
 
-           // v.vertex.y = max(v.vertex.y, _WaterHeight);
+            v.vertex.y = max(v.vertex.y, _WaterHeight);
             v.vertex += float4(v.normal, 1.0) * 3 * snowFactor * _SnowScale;
             v.vertex += float4(0.0, 1.0, 0.0, 1.0) * 10 * snowFactor * _SnowScale;
 

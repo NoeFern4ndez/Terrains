@@ -96,12 +96,12 @@ Material:
     - _FlowerClamp: 0.181
     - _FlowerDistanceX: 1000
     - _FlowerDistanceY: 1000
-    - _FlowerScale: 0
+    - _FlowerScale: 0.902
     - _FlowerSlope: 0.23
     - _GlossMapScale: 1
     - _Glossiness: 0
     - _GlossyReflections: 1
-    - _GrassClamp: 0.894
+    - _GrassClamp: 0.773
     - _GrassHeight: 230.43
     - _GrassHeightVariation: 7.2
     - _GrassThreshold: 0.67
@@ -109,14 +109,14 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _RockClamp: 0.15
+    - _RockClamp: 0.13
     - _RockThreshold: 0.47
     - _SmoothnessTextureChannel: 0
-    - _SnowClamp: 0.177
-    - _SnowHeightVariation: 40
-    - _SnowScale: 0.207
-    - _SnowSlope: 0.609
-    - _SnowThreshold: 388.1
+    - _SnowClamp: 0.503
+    - _SnowHeightVariation: 20
+    - _SnowScale: 0.469
+    - _SnowSlope: 0.713
+    - _SnowThreshold: 345.15
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
